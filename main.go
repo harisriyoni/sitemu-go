@@ -2,6 +2,7 @@ package main
 
 import (
 	"net/http"
+	"os"
 
 	"github.com/go-playground/validator/v10"
 	_ "github.com/go-sql-driver/mysql"
@@ -12,7 +13,6 @@ import (
 	"github.com/harisriyoni/sitemu-go/repository"
 	"github.com/harisriyoni/sitemu-go/service"
 	"github.com/julienschmidt/httprouter"
-	_ "github.com/rs/cors"
 )
 
 func main() {
@@ -101,10 +101,16 @@ func main() {
 	// === Error Handler ===
 	router.PanicHandler = helper.ErrorHandler
 
+	// === PORT ===
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080" // Default for local dev
+	}
+
 	// === Start Server with CORS Middleware ===
 	server := http.Server{
-		Addr:    ":8080",
-		Handler: middleware.CORSMiddleware(router), // Apply CORS here
+		Addr:    ":" + port,
+		Handler: middleware.CORSMiddleware(router), // Apply CORS
 	}
 
 	err := server.ListenAndServe()
