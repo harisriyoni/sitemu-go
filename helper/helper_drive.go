@@ -2,6 +2,7 @@ package helper
 
 import (
 	"context"
+	"encoding/base64"
 	"fmt"
 	"mime/multipart"
 	"os"
@@ -13,23 +14,26 @@ import (
 )
 
 var srv *drive.Service
+var DriveService *drive.Service
 
-// Inisialisasi Google Drive dari ENV (untuk Heroku)
 func InitDriveService() error {
-	credsJSON := os.Getenv("GOOGLE_CREDENTIALS_JSON")
-	if credsJSON == "" {
-		return fmt.Errorf("GOOGLE_CREDENTIALS_JSON is not set")
+	credsB64 := os.Getenv("GOOGLE_CREDENTIALS_JSON_BASE64")
+	if credsB64 == "" {
+		return fmt.Errorf("GOOGLE_CREDENTIALS_JSON_BASE64 is not set")
+	}
+
+	credsBytes, err := base64.StdEncoding.DecodeString(credsB64)
+	if err != nil {
+		return fmt.Errorf("failed to decode base64 credentials: %v", err)
 	}
 
 	ctx := context.Background()
-	config := []byte(credsJSON)
-
-	var err error
-	srv, err = drive.NewService(ctx, option.WithCredentialsJSON(config))
+	srv, err := drive.NewService(ctx, option.WithCredentialsJSON(credsBytes))
 	if err != nil {
 		return fmt.Errorf("failed to initialize Google Drive: %v", err)
 	}
 
+	DriveService = srv
 	return nil
 }
 
