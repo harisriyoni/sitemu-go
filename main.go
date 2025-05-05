@@ -12,6 +12,7 @@ import (
 	"github.com/harisriyoni/sitemu-go/repository"
 	"github.com/harisriyoni/sitemu-go/service"
 	"github.com/julienschmidt/httprouter"
+	_ "github.com/rs/cors"
 )
 
 func main() {
@@ -50,16 +51,16 @@ func main() {
 	router.POST("/api/users/register", userController.Register)
 	router.POST("/api/users/login", userController.Login)
 
-	router.GET("/api/berita/all", beritaController.GetAll)         // Public: semua berita
-	router.GET("/api/berita/detail/:id", beritaController.GetByID) // Public: detail berita
+	router.GET("/api/berita/all", beritaController.GetAll)
+	router.GET("/api/berita/detail/:id", beritaController.GetByID)
 
-	router.GET("/api/organisasi/all", organisasiController.GetAll) // Public: semua organisasi
+	router.GET("/api/organisasi/all", organisasiController.GetAll)
 
-	router.GET("/api/type-galeri/all", typeGaleriController.GetAll)         // Publik: semua tipe galeri
-	router.GET("/api/type-galeri/detail/:id", typeGaleriController.GetByID) // Publik: detail tipe galeri
+	router.GET("/api/type-galeri/all", typeGaleriController.GetAll)
+	router.GET("/api/type-galeri/detail/:id", typeGaleriController.GetByID)
 
-	router.GET("/api/prestasi/all", prestasiController.GetAll)         // Public
-	router.GET("/api/prestasi/detail/:id", prestasiController.GetByID) // Public
+	router.GET("/api/prestasi/all", prestasiController.GetAll)
+	router.GET("/api/prestasi/detail/:id", prestasiController.GetByID)
 
 	router.GET("/api/galeri/all", galeriController.GetAll)
 	router.GET("/api/galeri/detail/:id", galeriController.GetByID)
@@ -69,46 +70,41 @@ func main() {
 	router.ServeFiles("/public/galeri/*filepath", http.Dir("public/galeri"))
 
 	// === PROTECTED ROUTES ===
-	// User
 	router.GET("/api/users/profile", middleware.AuthMiddleware(userController.Profile))
 	router.PUT("/api/users/profile", middleware.AuthMiddleware(userController.Update))
 	router.DELETE("/api/users/profile", middleware.AuthMiddleware(userController.Delete))
 
-	// Organisasi
 	router.POST("/api/organisasi", middleware.AuthMiddleware(organisasiController.Create))
 	router.GET("/api/organisasi", middleware.AuthMiddleware(organisasiController.GetByUser))
 	router.PUT("/api/organisasi/:id", middleware.AuthMiddleware(organisasiController.Update))
 	router.DELETE("/api/organisasi/:id", middleware.AuthMiddleware(organisasiController.Delete))
 
-	// Berita
 	router.POST("/api/berita", middleware.AuthMiddleware(beritaController.Create))
 	router.PUT("/api/berita/:id", middleware.AuthMiddleware(beritaController.Update))
 	router.DELETE("/api/berita/:id", middleware.AuthMiddleware(beritaController.Delete))
 	router.GET("/api/user/berita", middleware.AuthMiddleware(beritaController.GetByUser))
 
-	// Type Galeri
 	router.POST("/api/type-galeri", middleware.AuthMiddleware(typeGaleriController.Create))
 	router.PUT("/api/type-galeri/:id", middleware.AuthMiddleware(typeGaleriController.Update))
 	router.DELETE("/api/type-galeri/:id", middleware.AuthMiddleware(typeGaleriController.Delete))
 	router.GET("/api/user/type-galeri", middleware.AuthMiddleware(typeGaleriController.GetByUser))
 
-	// Galeri
 	router.POST("/api/galeri", middleware.AuthMiddleware(galeriController.Create))
 	router.PUT("/api/galeri/:id", middleware.AuthMiddleware(galeriController.Update))
 	router.DELETE("/api/galeri/:id", middleware.AuthMiddleware(galeriController.Delete))
 
-	// Prestasi
 	router.POST("/api/prestasi", middleware.AuthMiddleware(prestasiController.Create))
 	router.PUT("/api/prestasi/:id", middleware.AuthMiddleware(prestasiController.Update))
 	router.DELETE("/api/prestasi/:id", middleware.AuthMiddleware(prestasiController.Delete))
 	router.GET("/api/prestasi", middleware.AuthMiddleware(prestasiController.GetByUser))
 
-	// === Error Handler dan Server ===
+	// === Error Handler ===
 	router.PanicHandler = helper.ErrorHandler
 
+	// === Start Server with CORS Middleware ===
 	server := http.Server{
 		Addr:    ":8080",
-		Handler: router,
+		Handler: middleware.CORSMiddleware(router), // Apply CORS here
 	}
 
 	err := server.ListenAndServe()
