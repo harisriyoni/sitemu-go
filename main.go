@@ -17,15 +17,15 @@ import (
 )
 
 func main() {
-	// === Init DB & Validator ===
-	db := app.NewDB()
-	validate := validator.New()
-
 	// === Init Google Drive Service ===
 	err := helper.InitDriveService()
 	if err != nil {
 		log.Fatalf("Gagal inisialisasi Google Drive: %v", err)
 	}
+
+	// === Init DB & Validator ===
+	db := app.NewDB()
+	validate := validator.New()
 
 	// === Dependency Injection ===
 	userRepository := repository.NewUserRepository(db)
@@ -73,7 +73,7 @@ func main() {
 	router.GET("/api/galeri/all", galeriController.GetAll)
 	router.GET("/api/galeri/detail/:id", galeriController.GetByID)
 
-	// Serve file lokal (legacy fallback, bisa dihapus jika semua pindah ke Drive)
+	// Legacy file access (jika masih pakai penyimpanan lokal)
 	router.ServeFiles("/public/berita/*filepath", http.Dir("public/berita"))
 	router.ServeFiles("/public/organisasi/*filepath", http.Dir("public/organisasi"))
 	router.ServeFiles("/public/galeri/*filepath", http.Dir("public/galeri"))

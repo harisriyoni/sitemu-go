@@ -20,3 +20,9 @@ vendor/
 *.dll
 *.so
 *.out
+sitemu-go
+
+# Ignore Procfile
+Procfile
+*.env
+# Ignore database files
