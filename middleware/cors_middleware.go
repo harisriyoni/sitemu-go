@@ -10,8 +10,8 @@ func CORSMiddleware(next http.Handler) http.Handler {
 
 		// Allowed origins
 		allowedOrigins := map[string]bool{
-			"http://localhost:3000":     true, // contoh frontend dev
-			"https://sitemubersatu.com": true, // contoh frontend prod
+			"http://localhost:3000":     true,
+			"https://sitemubersatu.com": true,
 		}
 
 		if allowedOrigins[origin] {
