@@ -1,6 +1,7 @@
 package main
 
 import (
+	"log"
 	"net/http"
 	"os"
 
@@ -16,8 +17,15 @@ import (
 )
 
 func main() {
+	// === Init DB & Validator ===
 	db := app.NewDB()
 	validate := validator.New()
+
+	// === Init Google Drive Service ===
+	err := helper.InitDriveService()
+	if err != nil {
+		log.Fatalf("Gagal inisialisasi Google Drive: %v", err)
+	}
 
 	// === Dependency Injection ===
 	userRepository := repository.NewUserRepository(db)
@@ -65,6 +73,7 @@ func main() {
 	router.GET("/api/galeri/all", galeriController.GetAll)
 	router.GET("/api/galeri/detail/:id", galeriController.GetByID)
 
+	// Serve file lokal (legacy fallback, bisa dihapus jika semua pindah ke Drive)
 	router.ServeFiles("/public/berita/*filepath", http.Dir("public/berita"))
 	router.ServeFiles("/public/organisasi/*filepath", http.Dir("public/organisasi"))
 	router.ServeFiles("/public/galeri/*filepath", http.Dir("public/galeri"))
@@ -104,15 +113,15 @@ func main() {
 	// === PORT ===
 	port := os.Getenv("PORT")
 	if port == "" {
-		port = "8080" // Default for local dev
+		port = "8080"
 	}
 
 	// === Start Server with CORS Middleware ===
 	server := http.Server{
 		Addr:    ":" + port,
-		Handler: middleware.CORSMiddleware(router), // Apply CORS
+		Handler: middleware.CORSMiddleware(router),
 	}
 
-	err := server.ListenAndServe()
+	err = server.ListenAndServe()
 	helper.PanicIfError(err)
 }

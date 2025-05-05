@@ -1,0 +1,22 @@
+# Jangan upload file kredensial atau konfigurasi sensitif
+*.json
+!README.md
+
+# Folder build/cache/temp
+bin/
+vendor/
+*.log
+*.tmp
+*.bak
+
+# OS/Editor-specific
+.DS_Store
+.idea/
+.vscode/
+*.swp
+
+# Binaries / Exec
+*.exe
+*.dll
+*.so
+*.out

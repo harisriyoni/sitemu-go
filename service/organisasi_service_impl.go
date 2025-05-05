@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"fmt"
 	"mime/multipart"
-	"os"
 
 	"github.com/go-playground/validator/v10"
 	"github.com/harisriyoni/sitemu-go/helper"
@@ -28,13 +27,15 @@ func NewOrganisasiService(repo repository.OrganisasiRepository, db *sql.DB, vali
 	}
 }
 
+const googleDriveFolderID = "YOUR_ORGANISASI_FOLDER_ID" // Ganti dengan folder ID asli
+
 func (s *organisasiServiceImpl) CreateOrganisasi(ctx context.Context, userID int, req web.OrganisasiCreateRequest, image multipart.File, imageHeader *multipart.FileHeader) (web.OrganisasiResponse, error) {
 	err := s.Validate.Struct(req)
 	if err != nil {
 		return web.OrganisasiResponse{}, err
 	}
 
-	filename, err := helper.SaveUploadedFile(image, imageHeader, "organisasi")
+	fileID, imageURL, err := helper.UploadToDrive(image, imageHeader, googleDriveFolderID)
 	if err != nil {
 		return web.OrganisasiResponse{}, err
 	}
@@ -43,7 +44,7 @@ func (s *organisasiServiceImpl) CreateOrganisasi(ctx context.Context, userID int
 		UserID:  userID,
 		Jabatan: req.Jabatan,
 		Nama:    req.Nama,
-		Image:   filename,
+		Image:   fileID,
 	}
 
 	saved, err := s.Repo.Create(ctx, org)
@@ -56,7 +57,7 @@ func (s *organisasiServiceImpl) CreateOrganisasi(ctx context.Context, userID int
 		UserID:  saved.UserID,
 		Jabatan: saved.Jabatan,
 		Nama:    saved.Nama,
-		Image:   helper.PublicImageURL("organisasi", saved.Image),
+		Image:   imageURL,
 	}, nil
 }
 
@@ -73,20 +74,13 @@ func (s *organisasiServiceImpl) GetOrganisasiByUserID(ctx context.Context, userI
 			UserID:  item.UserID,
 			Jabatan: item.Jabatan,
 			Nama:    item.Nama,
-			Image:   helper.PublicImageURL("organisasi", item.Image),
+			Image:   helper.PublicImageURLDrive(item.Image),
 		})
 	}
 	return results, nil
 }
 
-func (s *organisasiServiceImpl) UpdateOrganisasi(
-	ctx context.Context,
-	id int,
-	userID int,
-	req web.OrganisasiUpdateRequest,
-	image multipart.File,
-	imageHeader *multipart.FileHeader,
-) (web.OrganisasiResponse, error) {
+func (s *organisasiServiceImpl) UpdateOrganisasi(ctx context.Context, id int, userID int, req web.OrganisasiUpdateRequest, image multipart.File, imageHeader *multipart.FileHeader) (web.OrganisasiResponse, error) {
 	err := s.Validate.Struct(req)
 	if err != nil {
 		return web.OrganisasiResponse{}, err
@@ -102,12 +96,13 @@ func (s *organisasiServiceImpl) UpdateOrganisasi(
 	}
 
 	if image != nil {
-		// Pakai helper baru: ReplaceUploadedFile
-		newFilename, err := helper.ReplaceUploadedFile(org.Image, image, imageHeader, "organisasi")
+		_ = helper.DeleteFromDrive(org.Image)
+
+		fileID, _, err := helper.UploadToDrive(image, imageHeader, googleDriveFolderID)
 		if err != nil {
 			return web.OrganisasiResponse{}, err
 		}
-		org.Image = newFilename
+		org.Image = fileID
 	}
 
 	org.Nama = req.Nama
@@ -123,7 +118,7 @@ func (s *organisasiServiceImpl) UpdateOrganisasi(
 		UserID:  updated.UserID,
 		Jabatan: updated.Jabatan,
 		Nama:    updated.Nama,
-		Image:   helper.PublicImageURL("organisasi", updated.Image),
+		Image:   helper.PublicImageURLDrive(updated.Image),
 	}, nil
 }
 
@@ -133,17 +128,12 @@ func (s *organisasiServiceImpl) DeleteOrganisasi(ctx context.Context, id int, us
 		return err
 	}
 
-	if org.UserID != userID { 
+	if org.UserID != userID {
 		return fmt.Errorf("unauthorized")
 	}
 
-	// Hapus file gambar
-	err = helper.DeleteFile("organisasi", org.Image)
-	if err != nil && !os.IsNotExist(err) {
-		return fmt.Errorf("failed to delete image file: %v", err)
-	}
+	_ = helper.DeleteFromDrive(org.Image)
 
-	// Hapus dari database
 	return s.Repo.Delete(ctx, id)
 }
 
@@ -160,7 +150,7 @@ func (s *organisasiServiceImpl) GetAllOrganisasi(ctx context.Context) ([]web.Org
 			UserID:  item.UserID,
 			Jabatan: item.Jabatan,
 			Nama:    item.Nama,
-			Image:   helper.PublicImageURL("organisasi", item.Image),
+			Image:   helper.PublicImageURLDrive(item.Image),
 		})
 	}
 	return result, nil

@@ -4,11 +4,7 @@ import (
 	"context"
 	"fmt"
 	"mime/multipart"
-	"os"
-	"path/filepath"
-	"strings"
 
-	"github.com/google/uuid"
 	"github.com/harisriyoni/sitemu-go/helper"
 	"github.com/harisriyoni/sitemu-go/model/domain"
 	"github.com/harisriyoni/sitemu-go/model/web"
@@ -23,36 +19,23 @@ func NewBeritaService(repo repository.BeritaRepository) BeritaService {
 	return &beritaServiceImpl{Repo: repo}
 }
 
-func toFullImageURL(path string) string {
-	cleanPath := strings.TrimPrefix(path, "/")
-	cleanPath = strings.ReplaceAll(cleanPath, "\\", "/")
-	return fmt.Sprintf("http://localhost:8080/%s", cleanPath)
-}
+const beritaFolderID = "YOUR_BERITA_FOLDER_ID"
 
 func (s *beritaServiceImpl) Create(ctx context.Context, userID int, request web.BeritaCreateRequest, imageFile multipart.File, imageHeader *multipart.FileHeader) (web.BeritaResponse, error) {
-	imagePath := ""
+	imageID := ""
 	if imageFile != nil && imageHeader != nil {
-		ext := filepath.Ext(imageHeader.Filename)
-		filename := fmt.Sprintf("%s%s", uuid.New().String(), ext)
-		imagePath = filepath.Join("public", "berita", filename)
-
-		out, err := os.Create(imagePath)
+		driveID, _, err := helper.UploadToDrive(imageFile, imageHeader, beritaFolderID)
 		if err != nil {
 			return web.BeritaResponse{}, err
 		}
-		defer out.Close()
-
-		_, err = helper.CopyFile(out, imageFile)
-		if err != nil {
-			return web.BeritaResponse{}, err
-		}
+		imageID = driveID
 	}
 
 	berita := domain.Berita{
 		TitleBerita: request.TitleBerita,
 		Tanggal:     request.Tanggal,
 		Deskripsi:   request.Deskripsi,
-		Image:       "/" + imagePath,
+		Image:       imageID,
 		UserID:      userID,
 	}
 
@@ -66,7 +49,7 @@ func (s *beritaServiceImpl) Create(ctx context.Context, userID int, request web.
 		TitleBerita: saved.TitleBerita,
 		Tanggal:     saved.Tanggal,
 		Deskripsi:   saved.Deskripsi,
-		Image:       toFullImageURL(saved.Image),
+		Image:       helper.PublicImageURLDrive(saved.Image),
 		UserID:      saved.UserID,
 	}, nil
 }
@@ -82,25 +65,13 @@ func (s *beritaServiceImpl) Update(ctx context.Context, id int, userID int, requ
 
 	if imageFile != nil && imageHeader != nil {
 		if existing.Image != "" {
-			os.Remove("." + existing.Image)
+			_ = helper.DeleteFromDrive(existing.Image)
 		}
-
-		ext := filepath.Ext(imageHeader.Filename)
-		filename := fmt.Sprintf("%s%s", uuid.New().String(), ext)
-		newImagePath := filepath.Join("public", "berita", filename)
-
-		out, err := os.Create(newImagePath)
+		driveID, _, err := helper.UploadToDrive(imageFile, imageHeader, beritaFolderID)
 		if err != nil {
 			return web.BeritaResponse{}, err
 		}
-		defer out.Close()
-
-		_, err = helper.CopyFile(out, imageFile)
-		if err != nil {
-			return web.BeritaResponse{}, err
-		}
-
-		existing.Image = "/" + newImagePath
+		existing.Image = driveID
 	}
 
 	existing.TitleBerita = request.TitleBerita
@@ -117,7 +88,7 @@ func (s *beritaServiceImpl) Update(ctx context.Context, id int, userID int, requ
 		TitleBerita: updated.TitleBerita,
 		Tanggal:     updated.Tanggal,
 		Deskripsi:   updated.Deskripsi,
-		Image:       toFullImageURL(updated.Image),
+		Image:       helper.PublicImageURLDrive(updated.Image),
 		UserID:      updated.UserID,
 	}, nil
 }
@@ -132,7 +103,7 @@ func (s *beritaServiceImpl) Delete(ctx context.Context, id int, userID int) erro
 	}
 
 	if berita.Image != "" {
-		os.Remove("." + berita.Image)
+		_ = helper.DeleteFromDrive(berita.Image)
 	}
 
 	return s.Repo.Delete(ctx, id)
@@ -150,7 +121,7 @@ func (s *beritaServiceImpl) GetAll(ctx context.Context) ([]web.BeritaResponse, e
 			ID:          b.ID,
 			TitleBerita: b.TitleBerita,
 			Tanggal:     b.Tanggal,
-			Image:       toFullImageURL(b.Image),
+			Image:       helper.PublicImageURLDrive(b.Image),
 			Deskripsi:   b.Deskripsi,
 			UserID:      b.UserID,
 		})
@@ -169,7 +140,7 @@ func (s *beritaServiceImpl) GetByID(ctx context.Context, id int) (web.BeritaResp
 		ID:          b.ID,
 		TitleBerita: b.TitleBerita,
 		Tanggal:     b.Tanggal,
-		Image:       toFullImageURL(b.Image),
+		Image:       helper.PublicImageURLDrive(b.Image),
 		Deskripsi:   b.Deskripsi,
 		UserID:      b.UserID,
 	}, nil
@@ -187,7 +158,7 @@ func (s *beritaServiceImpl) GetByUser(ctx context.Context, userID int) ([]web.Be
 			ID:          b.ID,
 			TitleBerita: b.TitleBerita,
 			Tanggal:     b.Tanggal,
-			Image:       toFullImageURL(b.Image),
+			Image:       helper.PublicImageURLDrive(b.Image),
 			Deskripsi:   b.Deskripsi,
 			UserID:      b.UserID,
 		})
