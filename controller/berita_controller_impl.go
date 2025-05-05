@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"log"
 	"net/http"
 	"strconv"
 
@@ -16,20 +17,20 @@ type beritaControllerImpl struct {
 }
 
 func NewBeritaController(service service.BeritaService) BeritaController {
-	return &beritaControllerImpl{
-		Service: service,
-	}
+	return &beritaControllerImpl{Service: service}
 }
 
 func (c *beritaControllerImpl) Create(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	userID, ok := middleware.GetUserIDFromContext(r.Context())
 	if !ok {
+		log.Println("[BERITA][Create] Unauthorized access")
 		helper.WriteError(w, http.StatusUnauthorized, "Unauthorized")
 		return
 	}
 
 	if err := r.ParseMultipartForm(10 << 20); err != nil {
-		helper.WriteError(w, http.StatusBadRequest, "Failed to parse form")
+		log.Printf("[BERITA][Create] Failed to parse multipart form: %v\n", err)
+		helper.WriteError(w, http.StatusBadRequest, "Invalid multipart form")
 		return
 	}
 
@@ -40,14 +41,13 @@ func (c *beritaControllerImpl) Create(w http.ResponseWriter, r *http.Request, _ 
 	}
 
 	imageFile, imageHeader, _ := r.FormFile("image")
-	defer func() {
-		if imageFile != nil {
-			imageFile.Close()
-		}
-	}()
+	if imageFile != nil {
+		defer imageFile.Close()
+	}
 
 	response, err := c.Service.Create(r.Context(), userID, req, imageFile, imageHeader)
 	if err != nil {
+		log.Printf("[BERITA][Create] Failed to create berita: %v\n", err)
 		helper.WriteError(w, http.StatusBadRequest, err.Error())
 		return
 	}
@@ -58,18 +58,21 @@ func (c *beritaControllerImpl) Create(w http.ResponseWriter, r *http.Request, _ 
 func (c *beritaControllerImpl) Update(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	userID, ok := middleware.GetUserIDFromContext(r.Context())
 	if !ok {
+		log.Println("[BERITA][Update] Unauthorized access")
 		helper.WriteError(w, http.StatusUnauthorized, "Unauthorized")
 		return
 	}
 
 	id, err := strconv.Atoi(ps.ByName("id"))
 	if err != nil {
+		log.Println("[BERITA][Update] Invalid ID format")
 		helper.WriteError(w, http.StatusBadRequest, "Invalid ID")
 		return
 	}
 
 	if err := r.ParseMultipartForm(10 << 20); err != nil {
-		helper.WriteError(w, http.StatusBadRequest, "Failed to parse form")
+		log.Printf("[BERITA][Update] Failed to parse multipart form: %v\n", err)
+		helper.WriteError(w, http.StatusBadRequest, "Invalid multipart form")
 		return
 	}
 
@@ -80,14 +83,13 @@ func (c *beritaControllerImpl) Update(w http.ResponseWriter, r *http.Request, ps
 	}
 
 	imageFile, imageHeader, _ := r.FormFile("image")
-	defer func() {
-		if imageFile != nil {
-			imageFile.Close()
-		}
-	}()
+	if imageFile != nil {
+		defer imageFile.Close()
+	}
 
 	response, err := c.Service.Update(r.Context(), id, userID, req, imageFile, imageHeader)
 	if err != nil {
+		log.Printf("[BERITA][Update] Failed to update berita ID %d: %v\n", id, err)
 		helper.WriteError(w, http.StatusBadRequest, err.Error())
 		return
 	}
@@ -98,18 +100,21 @@ func (c *beritaControllerImpl) Update(w http.ResponseWriter, r *http.Request, ps
 func (c *beritaControllerImpl) Delete(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	userID, ok := middleware.GetUserIDFromContext(r.Context())
 	if !ok {
+		log.Println("[BERITA][Delete] Unauthorized access")
 		helper.WriteError(w, http.StatusUnauthorized, "Unauthorized")
 		return
 	}
 
 	id, err := strconv.Atoi(ps.ByName("id"))
 	if err != nil {
+		log.Println("[BERITA][Delete] Invalid ID format")
 		helper.WriteError(w, http.StatusBadRequest, "Invalid ID")
 		return
 	}
 
 	err = c.Service.Delete(r.Context(), id, userID)
 	if err != nil {
+		log.Printf("[BERITA][Delete] Failed to delete berita ID %d: %v\n", id, err)
 		helper.WriteError(w, http.StatusBadRequest, err.Error())
 		return
 	}
@@ -120,13 +125,15 @@ func (c *beritaControllerImpl) Delete(w http.ResponseWriter, r *http.Request, ps
 func (c *beritaControllerImpl) GetByUser(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	userID, ok := middleware.GetUserIDFromContext(r.Context())
 	if !ok {
+		log.Println("[BERITA][GetByUser] Unauthorized access")
 		helper.WriteError(w, http.StatusUnauthorized, "Unauthorized")
 		return
 	}
 
 	results, err := c.Service.GetByUser(r.Context(), userID)
 	if err != nil {
-		helper.WriteError(w, http.StatusBadRequest, err.Error())
+		log.Printf("[BERITA][GetByUser] Failed to get berita: %v\n", err)
+		helper.WriteError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
@@ -136,7 +143,8 @@ func (c *beritaControllerImpl) GetByUser(w http.ResponseWriter, r *http.Request,
 func (c *beritaControllerImpl) GetAll(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	results, err := c.Service.GetAll(r.Context())
 	if err != nil {
-		helper.WriteError(w, http.StatusBadRequest, err.Error())
+		log.Printf("[BERITA][GetAll] Failed to get all berita: %v\n", err)
+		helper.WriteError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
@@ -146,13 +154,15 @@ func (c *beritaControllerImpl) GetAll(w http.ResponseWriter, r *http.Request, _ 
 func (c *beritaControllerImpl) GetByID(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	id, err := strconv.Atoi(ps.ByName("id"))
 	if err != nil {
+		log.Println("[BERITA][GetByID] Invalid ID format")
 		helper.WriteError(w, http.StatusBadRequest, "Invalid ID")
 		return
 	}
 
 	response, err := c.Service.GetByID(r.Context(), id)
 	if err != nil {
-		helper.WriteError(w, http.StatusBadRequest, err.Error())
+		log.Printf("[BERITA][GetByID] Failed to get berita ID %d: %v\n", id, err)
+		helper.WriteError(w, http.StatusNotFound, err.Error())
 		return
 	}
 

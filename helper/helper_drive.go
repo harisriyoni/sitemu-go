@@ -3,6 +3,7 @@ package helper
 import (
 	"context"
 	"encoding/base64"
+	"errors"
 	"fmt"
 	"mime/multipart"
 	"os"
@@ -28,7 +29,7 @@ func InitDriveService() error {
 	}
 
 	ctx := context.Background()
-	srv, err := drive.NewService(ctx, option.WithCredentialsJSON(credsBytes))
+	srv, err = drive.NewService(ctx, option.WithCredentialsJSON(credsBytes))
 	if err != nil {
 		return fmt.Errorf("failed to initialize Google Drive: %v", err)
 	}
@@ -37,8 +38,12 @@ func InitDriveService() error {
 	return nil
 }
 
-// Upload file ke Google Drive
+// Upload file ke Google Drive dengan validasi null pointer
 func UploadToDrive(file multipart.File, header *multipart.FileHeader, folderID string) (string, string, error) {
+	if file == nil || header == nil {
+		return "", "", errors.New("file atau header tidak boleh nil")
+	}
+
 	ext := filepath.Ext(header.Filename)
 	filename := uuid.New().String() + ext
 

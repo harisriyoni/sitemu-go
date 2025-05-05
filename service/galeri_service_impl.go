@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"fmt"
 	"mime/multipart"
 
 	"github.com/harisriyoni/sitemu-go/helper"
@@ -18,14 +19,14 @@ func NewGaleriService(repo repository.GaleriRepository) GaleriService {
 	return &galeriServiceImpl{Repo: repo}
 }
 
-const galeriFolderID = "YOUR_GALERI_FOLDER_ID"
+const galeriFolderID = "YOUR_GALERI_FOLDER_ID" // Ganti dengan ID folder Google Drive asli
 
 func (s *galeriServiceImpl) Create(ctx context.Context, request web.GaleriCreateRequest, imageFile multipart.File, imageHeader *multipart.FileHeader) (web.GaleriResponse, error) {
 	imageID := ""
 	if imageFile != nil && imageHeader != nil {
 		driveID, _, err := helper.UploadToDrive(imageFile, imageHeader, galeriFolderID)
 		if err != nil {
-			return web.GaleriResponse{}, err
+			return web.GaleriResponse{}, fmt.Errorf("failed to upload galeri image: %w", err)
 		}
 		imageID = driveID
 	}
@@ -61,7 +62,7 @@ func (s *galeriServiceImpl) Update(ctx context.Context, id int, request web.Gale
 		}
 		driveID, _, err := helper.UploadToDrive(imageFile, imageHeader, galeriFolderID)
 		if err != nil {
-			return web.GaleriResponse{}, err
+			return web.GaleriResponse{}, fmt.Errorf("failed to upload updated image: %w", err)
 		}
 		existing.Image = driveID
 	}

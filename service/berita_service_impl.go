@@ -26,7 +26,7 @@ func (s *beritaServiceImpl) Create(ctx context.Context, userID int, request web.
 	if imageFile != nil && imageHeader != nil {
 		driveID, _, err := helper.UploadToDrive(imageFile, imageHeader, beritaFolderID)
 		if err != nil {
-			return web.BeritaResponse{}, err
+			return web.BeritaResponse{}, fmt.Errorf("upload failed: %w", err)
 		}
 		imageID = driveID
 	}
@@ -41,7 +41,7 @@ func (s *beritaServiceImpl) Create(ctx context.Context, userID int, request web.
 
 	saved, err := s.Repo.Create(ctx, berita)
 	if err != nil {
-		return web.BeritaResponse{}, err
+		return web.BeritaResponse{}, fmt.Errorf("create failed: %w", err)
 	}
 
 	return web.BeritaResponse{
@@ -57,7 +57,7 @@ func (s *beritaServiceImpl) Create(ctx context.Context, userID int, request web.
 func (s *beritaServiceImpl) Update(ctx context.Context, id int, userID int, request web.BeritaUpdateRequest, imageFile multipart.File, imageHeader *multipart.FileHeader) (web.BeritaResponse, error) {
 	existing, err := s.Repo.FindByID(ctx, id)
 	if err != nil {
-		return web.BeritaResponse{}, err
+		return web.BeritaResponse{}, fmt.Errorf("not found: %w", err)
 	}
 	if existing.UserID != userID {
 		return web.BeritaResponse{}, fmt.Errorf("unauthorized update")
@@ -69,7 +69,7 @@ func (s *beritaServiceImpl) Update(ctx context.Context, id int, userID int, requ
 		}
 		driveID, _, err := helper.UploadToDrive(imageFile, imageHeader, beritaFolderID)
 		if err != nil {
-			return web.BeritaResponse{}, err
+			return web.BeritaResponse{}, fmt.Errorf("upload update failed: %w", err)
 		}
 		existing.Image = driveID
 	}
@@ -80,7 +80,7 @@ func (s *beritaServiceImpl) Update(ctx context.Context, id int, userID int, requ
 
 	updated, err := s.Repo.Update(ctx, existing)
 	if err != nil {
-		return web.BeritaResponse{}, err
+		return web.BeritaResponse{}, fmt.Errorf("update failed: %w", err)
 	}
 
 	return web.BeritaResponse{
@@ -96,7 +96,7 @@ func (s *beritaServiceImpl) Update(ctx context.Context, id int, userID int, requ
 func (s *beritaServiceImpl) Delete(ctx context.Context, id int, userID int) error {
 	berita, err := s.Repo.FindByID(ctx, id)
 	if err != nil {
-		return err
+		return fmt.Errorf("not found: %w", err)
 	}
 	if berita.UserID != userID {
 		return fmt.Errorf("unauthorized delete")
@@ -112,7 +112,7 @@ func (s *beritaServiceImpl) Delete(ctx context.Context, id int, userID int) erro
 func (s *beritaServiceImpl) GetAll(ctx context.Context) ([]web.BeritaResponse, error) {
 	beritas, err := s.Repo.FindAll(ctx)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("get all failed: %w", err)
 	}
 
 	var responses []web.BeritaResponse
@@ -133,7 +133,7 @@ func (s *beritaServiceImpl) GetAll(ctx context.Context) ([]web.BeritaResponse, e
 func (s *beritaServiceImpl) GetByID(ctx context.Context, id int) (web.BeritaResponse, error) {
 	b, err := s.Repo.FindByID(ctx, id)
 	if err != nil {
-		return web.BeritaResponse{}, err
+		return web.BeritaResponse{}, fmt.Errorf("get by id failed: %w", err)
 	}
 
 	return web.BeritaResponse{
@@ -149,7 +149,7 @@ func (s *beritaServiceImpl) GetByID(ctx context.Context, id int) (web.BeritaResp
 func (s *beritaServiceImpl) GetByUser(ctx context.Context, userID int) ([]web.BeritaResponse, error) {
 	beritas, err := s.Repo.FindByUser(ctx, userID)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("get by user failed: %w", err)
 	}
 
 	var responses []web.BeritaResponse

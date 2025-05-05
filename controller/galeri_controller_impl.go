@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"log"
 	"net/http"
 	"strconv"
 
@@ -29,7 +30,12 @@ func (c *galeriControllerImpl) Create(w http.ResponseWriter, r *http.Request, _ 
 		TypeGaleriID: helper.Atoi(r.FormValue("type_galeri_id")),
 	}
 
-	imageFile, imageHeader, _ := r.FormFile("image")
+	imageFile, imageHeader, err := r.FormFile("image")
+	if err != nil && err != http.ErrMissingFile {
+		log.Println("[Create Galeri] Error FormFile:", err)
+		helper.WriteError(w, http.StatusBadRequest, "Invalid image upload")
+		return
+	}
 	defer func() {
 		if imageFile != nil {
 			imageFile.Close()
@@ -38,6 +44,7 @@ func (c *galeriControllerImpl) Create(w http.ResponseWriter, r *http.Request, _ 
 
 	result, err := c.Service.Create(r.Context(), req, imageFile, imageHeader)
 	if err != nil {
+		log.Println("[Create Galeri] Error Service Create:", err)
 		helper.WriteError(w, http.StatusBadRequest, err.Error())
 		return
 	}
@@ -62,7 +69,12 @@ func (c *galeriControllerImpl) Update(w http.ResponseWriter, r *http.Request, ps
 		TypeGaleriID: helper.Atoi(r.FormValue("type_galeri_id")),
 	}
 
-	imageFile, imageHeader, _ := r.FormFile("image")
+	imageFile, imageHeader, err := r.FormFile("image")
+	if err != nil && err != http.ErrMissingFile {
+		log.Println("[Update Galeri] Error FormFile:", err)
+		helper.WriteError(w, http.StatusBadRequest, "Invalid image upload")
+		return
+	}
 	defer func() {
 		if imageFile != nil {
 			imageFile.Close()
@@ -71,6 +83,7 @@ func (c *galeriControllerImpl) Update(w http.ResponseWriter, r *http.Request, ps
 
 	result, err := c.Service.Update(r.Context(), id, req, imageFile, imageHeader)
 	if err != nil {
+		log.Println("[Update Galeri] Error Service Update:", err)
 		helper.WriteError(w, http.StatusBadRequest, err.Error())
 		return
 	}
@@ -87,6 +100,7 @@ func (c *galeriControllerImpl) Delete(w http.ResponseWriter, r *http.Request, ps
 
 	err = c.Service.Delete(r.Context(), id)
 	if err != nil {
+		log.Println("[Delete Galeri] Error Service Delete:", err)
 		helper.WriteError(w, http.StatusBadRequest, err.Error())
 		return
 	}
@@ -97,6 +111,7 @@ func (c *galeriControllerImpl) Delete(w http.ResponseWriter, r *http.Request, ps
 func (c *galeriControllerImpl) GetAll(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	list, err := c.Service.GetAll(r.Context())
 	if err != nil {
+		log.Println("[GetAll Galeri] Error Service:", err)
 		helper.WriteError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
@@ -113,6 +128,7 @@ func (c *galeriControllerImpl) GetByID(w http.ResponseWriter, r *http.Request, p
 
 	result, err := c.Service.GetByID(r.Context(), id)
 	if err != nil {
+		log.Println("[GetByID Galeri] Error Service:", err)
 		helper.WriteError(w, http.StatusNotFound, err.Error())
 		return
 	}

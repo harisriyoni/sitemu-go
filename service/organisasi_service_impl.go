@@ -27,7 +27,7 @@ func NewOrganisasiService(repo repository.OrganisasiRepository, db *sql.DB, vali
 	}
 }
 
-const googleDriveFolderID = "YOUR_ORGANISASI_FOLDER_ID" // Ganti dengan folder ID asli
+const googleDriveFolderID = "YOUR_ORGANISASI_FOLDER_ID"
 
 func (s *organisasiServiceImpl) CreateOrganisasi(ctx context.Context, userID int, req web.OrganisasiCreateRequest, image multipart.File, imageHeader *multipart.FileHeader) (web.OrganisasiResponse, error) {
 	err := s.Validate.Struct(req)
@@ -35,9 +35,14 @@ func (s *organisasiServiceImpl) CreateOrganisasi(ctx context.Context, userID int
 		return web.OrganisasiResponse{}, err
 	}
 
-	fileID, imageURL, err := helper.UploadToDrive(image, imageHeader, googleDriveFolderID)
-	if err != nil {
-		return web.OrganisasiResponse{}, err
+	fileID := ""
+	imageURL := ""
+	if image != nil && imageHeader != nil {
+		var err error
+		fileID, imageURL, err = helper.UploadToDrive(image, imageHeader, googleDriveFolderID)
+		if err != nil {
+			return web.OrganisasiResponse{}, err
+		}
 	}
 
 	org := domain.Organisasi{
@@ -95,14 +100,13 @@ func (s *organisasiServiceImpl) UpdateOrganisasi(ctx context.Context, id int, us
 		return web.OrganisasiResponse{}, fmt.Errorf("unauthorized access")
 	}
 
-	if image != nil {
+	if image != nil && imageHeader != nil {
 		_ = helper.DeleteFromDrive(org.Image)
-
-		fileID, _, err := helper.UploadToDrive(image, imageHeader, googleDriveFolderID)
+		newID, _, err := helper.UploadToDrive(image, imageHeader, googleDriveFolderID)
 		if err != nil {
 			return web.OrganisasiResponse{}, err
 		}
-		org.Image = fileID
+		org.Image = newID
 	}
 
 	org.Nama = req.Nama
@@ -133,7 +137,6 @@ func (s *organisasiServiceImpl) DeleteOrganisasi(ctx context.Context, id int, us
 	}
 
 	_ = helper.DeleteFromDrive(org.Image)
-
 	return s.Repo.Delete(ctx, id)
 }
 
