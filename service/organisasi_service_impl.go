@@ -27,7 +27,7 @@ func NewOrganisasiService(repo repository.OrganisasiRepository, db *sql.DB, vali
 	}
 }
 
-const googleDriveFolderID = "YOUR_ORGANISASI_FOLDER_ID"
+const googleDriveFolderID = "1Vpp8ZVpHAIMdxDpBRegKLbLGaNEFvNdc"
 
 func (s *organisasiServiceImpl) CreateOrganisasi(ctx context.Context, userID int, req web.OrganisasiCreateRequest, image multipart.File, imageHeader *multipart.FileHeader) (web.OrganisasiResponse, error) {
 	err := s.Validate.Struct(req)

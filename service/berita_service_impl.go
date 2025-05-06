@@ -19,7 +19,7 @@ func NewBeritaService(repo repository.BeritaRepository) BeritaService {
 	return &beritaServiceImpl{Repo: repo}
 }
 
-const beritaFolderID = "YOUR_BERITA_FOLDER_ID"
+const beritaFolderID = "1G_sEddfYn5bOCNWIT6aRkjGmLUh0dSTL"
 
 func (s *beritaServiceImpl) Create(ctx context.Context, userID int, request web.BeritaCreateRequest, imageFile multipart.File, imageHeader *multipart.FileHeader) (web.BeritaResponse, error) {
 	imageID := ""

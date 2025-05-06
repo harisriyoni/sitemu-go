@@ -19,7 +19,7 @@ func NewGaleriService(repo repository.GaleriRepository) GaleriService {
 	return &galeriServiceImpl{Repo: repo}
 }
 
-const galeriFolderID = "YOUR_GALERI_FOLDER_ID" // Ganti dengan ID folder Google Drive asli
+const galeriFolderID = "1X8z2VQHLgGvR56P6D9YD2ieHjgPRU2la" // Ganti dengan ID folder Google Drive asli
 
 func (s *galeriServiceImpl) Create(ctx context.Context, request web.GaleriCreateRequest, imageFile multipart.File, imageHeader *multipart.FileHeader) (web.GaleriResponse, error) {
 	imageID := ""
