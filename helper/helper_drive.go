@@ -76,7 +76,7 @@ func DeleteFromDrive(fileID string) error {
 
 // Buat URL publik dari fileID
 func getPublicURL(fileID string) string {
-	return fmt.Sprintf("https://drive.google.com/uc?id=%s", fileID)
+	return fmt.Sprintf("https://drive.google.com/thumbnail?id=%s", fileID)
 }
 
 // Buat file publik

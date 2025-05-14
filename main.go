@@ -73,7 +73,7 @@ func main() {
 	router.GET("/api/galeri/all", galeriController.GetAll)
 	router.GET("/api/galeri/detail/:id", galeriController.GetByID)
 
-	// Legacy file access (jika masih pakai penyimpanan lokal)
+	// === Serve Static Files (Legacy Local Images) ===
 	router.ServeFiles("/public/berita/*filepath", http.Dir("public/berita"))
 	router.ServeFiles("/public/organisasi/*filepath", http.Dir("public/organisasi"))
 	router.ServeFiles("/public/galeri/*filepath", http.Dir("public/galeri"))
@@ -106,6 +106,12 @@ func main() {
 	router.PUT("/api/prestasi/:id", middleware.AuthMiddleware(prestasiController.Update))
 	router.DELETE("/api/prestasi/:id", middleware.AuthMiddleware(prestasiController.Delete))
 	router.GET("/api/prestasi", middleware.AuthMiddleware(prestasiController.GetByUser))
+
+	// === HEALTH CHECK ENDPOINT untuk UptimeRobot ===
+	router.GET("/health", func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("OK"))
+	})
 
 	// === Error Handler ===
 	router.PanicHandler = helper.ErrorHandler
